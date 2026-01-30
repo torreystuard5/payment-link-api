@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+payment_links.db
+email_logs.txt
+.env
