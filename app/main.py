@@ -1,17 +1,21 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional, List
-
 import os
+import logging
 
 import jwt
 import stripe
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, status, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 from pydantic import BaseModel, EmailStr, Field
 from sqlmodel import Field as SQLField, SQLModel, Session, create_engine, select
+
+# Logging
+logger = logging.getLogger("payment_links")
 
 # Load environment variables from .env
 load_dotenv()
@@ -82,6 +86,19 @@ fake_users_db = {
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 app = FastAPI()
+
+# CORS – safe defaults for future frontends
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -191,6 +208,7 @@ async def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+    logger.info("User logged in", extra={"username": user.username})
     return Token(access_token=access_token, token_type="bearer")
 
 
@@ -262,13 +280,17 @@ async def create_payment_link(
             )
             link.processor_reference = session.id
         except Exception as e:
-            print("Stripe error:", repr(e))
+            logger.exception("Stripe error")
             raise HTTPException(status_code=502, detail=f"Stripe error: {e}")
 
     with Session(engine) as session_db:
         session_db.add(link)
         session_db.commit()
         session_db.refresh(link)
+        logger.info(
+            "Created payment link",
+            extra={"owner": current_user.username, "link_id": link.id},
+        )
         return PaymentLinkRead(**link.dict())
 
 
@@ -304,6 +326,11 @@ async def mark_link_paid(
         session_db.commit()
         session_db.refresh(link)
 
+        logger.info(
+            "Marked link paid",
+            extra={"owner": current_user.username, "link_id": link.id},
+        )
+
         if link.customer_email:
             background_tasks.add_task(
                 log_email,
@@ -335,6 +362,12 @@ async def cancel_link(
         session_db.add(link)
         session_db.commit()
         session_db.refresh(link)
+
+        logger.info(
+            "Cancelled link",
+            extra={"owner": current_user.username, "link_id": link.id},
+        )
+
         return PaymentLinkRead(**link.dict())
 
 

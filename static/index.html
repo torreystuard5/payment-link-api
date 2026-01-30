@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Payment Links UI</title>
+</head>
+<body>
+  <h1>Payment Links</h1>
+
+  <section>
+    <h2>Login</h2>
+    <label>Username <input id="username" value="demo" /></label><br />
+    <label>Password <input id="password" type="password" value="password" /></label><br />
+    <button id="login-btn">Login</button>
+    <p id="login-status"></p>
+  </section>
+
+  <section>
+    <h2>Create payment link</h2>
+    <label>Amount (cents) <input id="amount" type="number" value="5000" /></label><br />
+    <label>Currency
+      <select id="currency">
+        <option value="usd">USD</option>
+        <option value="eur">EUR</option>
+        <option value="gbp">GBP</option>
+      </select>
+    </label><br />
+    <label>Description <input id="description" value="Test link" /></label><br />
+    <label>Customer email <input id="customer-email" /></label><br />
+    <label>Expires in minutes <input id="expires" type="number" /></label><br />
+    <label>Processor
+      <select id="processor">
+        <option value="internal">Internal</option>
+        <option value="stripe">Stripe</option>
+      </select>
+    </label><br />
+    <button id="create-link-btn">Create link</button>
+    <p id="create-status"></p>
+  </section>
+
+  <section>
+    <h2>Your links</h2>
+    <button id="refresh-links-btn">Refresh</button>
+    <pre id="links-list"></pre>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
