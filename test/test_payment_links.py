@@ -67,3 +67,20 @@ def test_expired_link_returns_410():
     # Second pay: should fail because link is no longer pending
     pay_resp = client.post(f"/payment-links/{link['id']}/pay", headers=headers)
     assert pay_resp.status_code == 400
+
+def test_cancel_link():
+    headers = login_demo()
+    payload = {
+        "amount": 2000,
+        "currency": "usd",
+        "description": "Cancelable link",
+        "processor": "internal",
+    }
+    create_resp = client.post("/payment-links", json=payload, headers=headers)
+    assert create_resp.status_code == 201
+    link = create_resp.json()
+
+    cancel_resp = client.post(f"/payment-links/{link['id']}/cancel", headers=headers)
+    assert cancel_resp.status_code == 200
+    data = cancel_resp.json()
+    assert data["status"] == "cancelled"
